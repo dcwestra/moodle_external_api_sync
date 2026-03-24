@@ -16,7 +16,7 @@ A generic, configurable integration plugin for MapleLMS that synchronises data b
 - **Advanced field mapping** — Dot-notation path extraction from deeply nested JSON with array index filters, field value filters, and wildcard collect. See Field Path Syntax below.
 - **Parent-child enumeration** — Two-stage API patterns (fetch ID list → fetch detail per ID) are supported natively. The parent endpoint fetches and caches IDs; the child iterates through them automatically.
 - **Pagination support** — Page number, offset, and cursor-based pagination
-- **Scheduled sync** — Each endpoint has its own cron schedule; a dispatcher task runs at the configured interval
+- **Scheduled sync** — Each endpoint has its own cron schedule; a dispatcher task runs every 15 minutes by default (configurable in Site Admin → Scheduled Tasks)
 - **Manual sync trigger** — Run any endpoint on demand from the admin UI
 - **Error reporting** — Per-run logs with per-record error details; configurable email alerts on failure
 - **Credential encryption** — Secrets, passwords, and tokens are AES-256-CBC encrypted at rest
@@ -29,6 +29,15 @@ A generic, configurable integration plugin for MapleLMS that synchronises data b
 - PHP 8.0+
 - `openssl` PHP extension (for credential encryption)
 
+---
+
+## Installation
+
+1. Download the latest `external_api_sync_vX.X.X.zip`
+2. Provide the zip to your MapleLMS support team for installation
+3. They will place it in `/local/external_api_sync/` and trigger a Moodle upgrade
+
+Or via admin UI: **Site Administration → Plugins → Install plugins** and upload the zip directly.
 
 ---
 
@@ -290,6 +299,8 @@ local_external_api_sync/
 | 1.0.0 | Initial release — user sync, enrolment sync, push users, OAuth2/APIKey/Basic/Bearer auth |
 | 1.1.0 | Added Teams Calendar entity type |
 | 1.2.0 | Added Course Completion and Activity Completion push entity types; fixed auth handler doubled Authorization header bug; switched all HTTP calls to native PHP curl; added array filter syntax to response parser (`Items[Field=Value]`, `Items[0]`, `Items[*]`); added parent-child endpoint enumeration for two-stage APIs; fixed manual run button to route through parent-child logic |
+| 1.2.1 | Fixed `is_due()` cron evaluator — replaced interval estimation with proper cron expression parsing supporting exact values, `*`, step (`*/N`), lists, and ranges; fixes endpoints not firing on correct schedule; added `set_time_limit(0)` for long-running syncs |
+| 1.2.2 | Source of truth enforcement — user sync now correctly overwrites Moodle fields with API values including previously blank fields; skips writes when values are identical for efficiency; Dayforce always wins on field conflicts |
 
 ---
 

@@ -213,7 +213,14 @@ class user_sync {
 
         $changed = false;
         foreach ($user_fields as $field => $value) {
-            if ($value !== null && isset($existing->$field) && (string)$existing->$field !== (string)$value) {
+            // Dayforce is source of truth — write API value if it is non-null
+            // AND differs from what is currently in Moodle. Skipping identical
+            // values avoids unnecessary DB writes across 8,000+ users nightly.
+            if ($value === null) {
+                continue; // Not returned by API — leave Moodle value untouched.
+            }
+            $existing_val = isset($existing->$field) ? (string)$existing->$field : '';
+            if ($existing_val !== (string)$value) {
                 $user->$field = $value;
                 $changed = true;
             }
@@ -236,6 +243,12 @@ class user_sync {
         global $DB;
 
         foreach ($profile_fields as $field_key => $value) {
+            // Skip null values — a null means the field was not present in the
+            // API response, not that it should be cleared.
+            if ($value === null) {
+                continue;
+            }
+
             $shortname = str_replace('profile_field_', '', $field_key);
             $field_record = $DB->get_record('user_info_field', ['shortname' => $shortname]);
 
@@ -248,16 +261,19 @@ class user_sync {
                 'fieldid' => $field_record->id,
             ]);
 
+            // Dayforce is source of truth — write API value only if it differs.
+            // Avoids unnecessary DB writes for unchanged profile fields.
             if ($existing) {
-                if ((string)$existing->data !== (string)$value) {
-                    $existing->data = $value;
-                    $DB->update_record('user_info_data', $existing);
+                if ((string)$existing->data === (string)$value) {
+                    continue; // No change — skip write.
                 }
+                $existing->data = (string) $value;
+                $DB->update_record('user_info_data', $existing);
             } else {
                 $data = new \stdClass();
                 $data->userid  = $userid;
                 $data->fieldid = $field_record->id;
-                $data->data    = $value ?? '';
+                $data->data    = (string) $value;
                 $DB->insert_record('user_info_data', $data);
             }
         }

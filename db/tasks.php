@@ -18,7 +18,7 @@ $tasks = [
     [
         'classname' => '\local_external_api_sync\task\sync_task',
         'blocking'  => 0,
-        'minute'    => '*/15',  // Check every 15 minutes; each endpoint has its own schedule logic.
+        'minute'    => '*/15',
         'hour'      => '*',
         'day'       => '*',
         'month'     => '*',

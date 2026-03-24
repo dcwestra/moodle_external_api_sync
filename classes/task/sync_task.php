@@ -38,6 +38,9 @@ class sync_task extends \core\task\scheduled_task {
     public function execute(): void {
         global $DB;
 
+        // Remove PHP execution time limit for long-running syncs.
+        @set_time_limit(0);
+
         mtrace('External API Sync: starting run at ' . userdate(time()));
 
         // Get all enabled endpoints with their connection.
@@ -244,7 +247,14 @@ class sync_task extends \core\task\scheduled_task {
 
     /**
      * Check whether an endpoint is due to run based on its cron schedule.
-     * Uses a simple 15-minute window check.
+     *
+     * Evaluates the cron expression properly:
+     * - If the endpoint has never run (last_run = 0), it is always due.
+     * - Otherwise, finds the most recent scheduled time before now and
+     *   checks whether last_run predates it.
+     *
+     * Supports standard 5-field cron: minute hour day month dayofweek
+     * Supports: specific values, *, and step syntax (e.g. *\/15)
      *
      * @param object $endpoint
      * @param int    $now      Current unix timestamp
@@ -252,57 +262,95 @@ class sync_task extends \core\task\scheduled_task {
      */
     private function is_due(object $endpoint, int $now): bool {
         if (empty($endpoint->schedule)) {
-            return true; // No schedule means always run.
+            return true;
         }
 
         $last_run = (int) ($endpoint->last_run ?? 0);
 
-        // Parse the cron expression to find the minimum interval.
-        // This is a simplified approach — evaluates whether enough time
-        // has passed since last run based on the schedule's hour field.
+        if ($last_run === 0) {
+            return true; // Never run — run now.
+        }
+
         try {
             $parts = explode(' ', trim($endpoint->schedule));
             if (count($parts) < 5) {
                 return true;
             }
 
-            [$minute, $hour, $day, $month, $dow] = $parts;
+            [$cron_min, $cron_hour, $cron_day, $cron_month, $cron_dow] = $parts;
 
-            // Calculate the interval in seconds from the schedule.
-            $interval = $this->schedule_to_min_interval($minute, $hour);
+            // Walk back in time (up to 25 hours) in 1-minute steps to find
+            // the most recent scheduled slot before now.
+            $check = $now;
+            $limit = $now - (25 * 3600); // Don't look back more than 25 hours.
 
-            // If we've never run, or enough time has passed.
-            return $last_run === 0 || ($now - $last_run) >= $interval;
+            while ($check > $limit) {
+                $t_min   = (int) date('i', $check);
+                $t_hour  = (int) date('G', $check);
+                $t_day   = (int) date('j', $check);
+                $t_month = (int) date('n', $check);
+                $t_dow   = (int) date('w', $check); // 0=Sunday
+
+                if (
+                    $this->cron_matches($t_min,   $cron_min)   &&
+                    $this->cron_matches($t_hour,  $cron_hour)  &&
+                    $this->cron_matches($t_day,   $cron_day)   &&
+                    $this->cron_matches($t_month, $cron_month) &&
+                    $this->cron_matches($t_dow,   $cron_dow)
+                ) {
+                    // Found the most recent scheduled slot.
+                    // Align to the start of this minute.
+                    $slot_time = mktime($t_hour, $t_min, 0,
+                        $t_month, $t_day, (int) date('Y', $check));
+
+                    // Due if last run was before this slot.
+                    return $last_run < $slot_time;
+                }
+
+                $check -= 60; // Step back one minute.
+            }
+
+            // No matching slot found in last 25 hours — run it.
+            return true;
 
         } catch (\Throwable $e) {
-            return true; // On parse error, just run it.
+            return true;
         }
     }
 
     /**
-     * Estimate minimum interval in seconds from minute/hour cron fields.
+     * Check whether a time component matches a cron field.
+     * Supports: * (any), N (exact), star/N (step), N,M (list)
      *
-     * @param string $minute
-     * @param string $hour
-     * @return int Seconds
+     * @param int    $value  Actual time value
+     * @param string $field  Cron field string
+     * @return bool
      */
-    private function schedule_to_min_interval(string $minute, string $hour): int {
-        if ($minute === '*' && $hour === '*') {
-            return 60; // Every minute.
+    private function cron_matches(int $value, string $field): bool {
+        if ($field === '*') {
+            return true;
         }
-        if (str_starts_with($minute, '*/')) {
-            $n = (int) substr($minute, 2);
-            return $n * 60;
+
+        // Step: */N
+        if (str_starts_with($field, '*/')) {
+            $step = (int) substr($field, 2);
+            return $step > 0 && ($value % $step) === 0;
         }
-        if ($hour === '*') {
-            return 60 * 60; // Hourly.
+
+        // List: N,M,O
+        if (strpos($field, ',') !== false) {
+            $values = array_map('intval', explode(',', $field));
+            return in_array($value, $values, true);
         }
-        if (str_starts_with($hour, '*/')) {
-            $n = (int) substr($hour, 2);
-            return $n * 3600;
+
+        // Range: N-M
+        if (strpos($field, '-') !== false) {
+            [$from, $to] = array_map('intval', explode('-', $field, 2));
+            return $value >= $from && $value <= $to;
         }
-        // Specific hour means once daily minimum.
-        return 24 * 3600;
+
+        // Exact value.
+        return $value === (int) $field;
     }
 
     /**
