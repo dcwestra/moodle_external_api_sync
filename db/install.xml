@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/external_api_sync/db" VERSION="20240319" COMMENT="XMLDB file for local_external_api_sync"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+
+    <!-- Connections: one row per external service (Dayforce, PowerBI, etc.) -->
+    <TABLE NAME="ext_api_connections" COMMENT="External API service connections">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Display name e.g. Dayforce"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" COMMENT="Optional description"/>
+        <FIELD NAME="auth_type" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="oauth2" COMMENT="oauth2, apikey, basic, bearer"/>
+        <FIELD NAME="base_url" TYPE="char" LENGTH="500" NOTNULL="true" COMMENT="Base API URL"/>
+        <FIELD NAME="token_url" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="OAuth2 token endpoint"/>
+        <FIELD NAME="client_id" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="OAuth2 client ID"/>
+        <FIELD NAME="client_secret" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Encrypted OAuth2 client secret"/>
+        <FIELD NAME="oauth_scope" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="OAuth2 scope(s)"/>
+        <FIELD NAME="api_key" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Encrypted API key"/>
+        <FIELD NAME="api_key_header" TYPE="char" LENGTH="100" NOTNULL="false" DEFAULT="X-API-Key" COMMENT="Header name for API key"/>
+        <FIELD NAME="api_key_param" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Query param name if location=query"/>
+        <FIELD NAME="api_key_location" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="header" COMMENT="header or query"/>
+        <FIELD NAME="basic_username" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Basic auth username"/>
+        <FIELD NAME="basic_password" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Encrypted basic auth password"/>
+        <FIELD NAME="bearer_token" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Encrypted static bearer token"/>
+        <FIELD NAME="extra_headers" TYPE="text" NOTNULL="false" COMMENT="JSON: additional headers as key-value pairs"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
+    <!-- Endpoints: one row per API endpoint within a connection -->
+    <TABLE NAME="ext_api_endpoints" COMMENT="API endpoints per connection">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="connection_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to ext_api_connections"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Display name e.g. Employee Pull"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="path" TYPE="char" LENGTH="500" NOTNULL="true" COMMENT="API path e.g. /api/v1/employees"/>
+        <FIELD NAME="http_method" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="GET" COMMENT="GET, POST, PUT, PATCH"/>
+        <FIELD NAME="direction" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="pull" COMMENT="pull or push"/>
+        <FIELD NAME="entity_type" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="user" COMMENT="user, enrolment, raw"/>
+        <FIELD NAME="sync_action" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="create_update" COMMENT="create_update, suspend, enrol, unenrol"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="schedule" TYPE="char" LENGTH="100" NOTNULL="false" DEFAULT="0 2 * * *" COMMENT="Cron expression"/>
+        <FIELD NAME="last_run" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0"/>
+        <FIELD NAME="last_status" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="success, error, partial, never"/>
+        <FIELD NAME="error_email" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Comma-separated error report recipients"/>
+        <FIELD NAME="response_root_path" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Dot notation path to records array e.g. Data.Employees"/>
+        <FIELD NAME="request_body_template" TYPE="text" NOTNULL="false" COMMENT="JSON template for POST/push body"/>
+        <FIELD NAME="query_params" TYPE="text" NOTNULL="false" COMMENT="JSON: static query params to append"/>
+        <FIELD NAME="pagination_enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="pagination_type" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="page" COMMENT="page or offset"/>
+        <FIELD NAME="pagination_param" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="e.g. pageNumber"/>
+        <FIELD NAME="page_size_param" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="e.g. pageSize"/>
+        <FIELD NAME="page_size" TYPE="int" LENGTH="5" NOTNULL="false" DEFAULT="100"/>
+        <FIELD NAME="total_count_path" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Dot path to total count in response"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="parent_endpoint_id" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK to parent endpoint that supplies IDs for enumeration"/>
+        <FIELD NAME="parent_id_path" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Dot-notation path to extract ID from parent response e.g. XRefCode"/>
+        <FIELD NAME="parent_id_placeholder" TYPE="char" LENGTH="100" NOTNULL="false" DEFAULT="{XRefCode}" COMMENT="Placeholder token in path/params replaced with each parent ID"/>
+        <FIELD NAME="is_parent_only" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1 = only runs when called by a child endpoint, not by cron directly"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_connection" TYPE="foreign" FIELDS="connection_id" REFTABLE="ext_api_connections" REFFIELDS="id"/>
+        <KEY NAME="fk_parent" TYPE="foreign" FIELDS="parent_endpoint_id" REFTABLE="ext_api_endpoints" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_connection_enabled" UNIQUE="false" FIELDS="connection_id, enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Field mappings: external field → Moodle field per endpoint -->
+    <TABLE NAME="ext_api_field_mappings" COMMENT="Field mappings per endpoint">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="endpoint_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to ext_api_endpoints"/>
+        <FIELD NAME="external_field" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Dot notation e.g. Employee.FirstName"/>
+        <FIELD NAME="internal_field" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Moodle field e.g. firstname or profile_field_companycode"/>
+        <FIELD NAME="is_key_field" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Used to match existing records"/>
+        <FIELD NAME="transform" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="none" COMMENT="none, uppercase, lowercase, date_unix, trim"/>
+        <FIELD NAME="default_value" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Fallback if external field is empty"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_endpoint" TYPE="foreign" FIELDS="endpoint_id" REFTABLE="ext_api_endpoints" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_endpoint_enabled" UNIQUE="false" FIELDS="endpoint_id, enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Sync log: one row per sync run per endpoint -->
+    <TABLE NAME="ext_api_sync_log" COMMENT="Sync run history and error logs">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="endpoint_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to ext_api_endpoints"/>
+        <FIELD NAME="connection_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Denormalised for easy reporting"/>
+        <FIELD NAME="run_time" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="duration_seconds" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0"/>
+        <FIELD NAME="records_fetched" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="records_created" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="records_updated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="records_skipped" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="records_failed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="success" COMMENT="success, error, partial"/>
+        <FIELD NAME="error_details" TYPE="text" NOTNULL="false" COMMENT="JSON array of per-record errors"/>
+        <FIELD NAME="triggered_by" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="schedule" COMMENT="schedule or manual"/>
+        <FIELD NAME="error_email_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1 if error email was sent for this run"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_endpoint" TYPE="foreign" FIELDS="endpoint_id" REFTABLE="ext_api_endpoints" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_endpoint_runtime" UNIQUE="false" FIELDS="endpoint_id, run_time"/>
+        <INDEX NAME="idx_connection_runtime" UNIQUE="false" FIELDS="connection_id, run_time"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Token cache: stores active OAuth2 tokens to avoid re-authenticating every run -->
+    <TABLE NAME="ext_api_token_cache" COMMENT="Cached OAuth2 access tokens">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="connection_id" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="access_token" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="token_type" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="Bearer"/>
+        <FIELD NAME="expires_at" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_connection" TYPE="foreign" FIELDS="connection_id" REFTABLE="ext_api_connections" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_connection_expires" UNIQUE="false" FIELDS="connection_id, expires_at"/>
+      </INDEXES>
+    </TABLE>
+
+
+    <!-- Temporary ID cache: stores IDs fetched by parent endpoints for child enumeration -->
+    <TABLE NAME="ext_api_id_cache" COMMENT="Temporary ID cache for parent-child endpoint enumeration">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="endpoint_id" TYPE="int"  LENGTH="10"  NOTNULL="true" COMMENT="FK to parent ext_api_endpoints"/>
+        <FIELD NAME="run_id"      TYPE="int"  LENGTH="10"  NOTNULL="true" COMMENT="Unix timestamp grouping a single parent fetch run"/>
+        <FIELD NAME="item_id"     TYPE="char" LENGTH="500" NOTNULL="true" COMMENT="Extracted ID value e.g. XRefCode value"/>
+        <FIELD NAME="processed"   TYPE="int"  LENGTH="1"   NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary"     TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_endpoint" TYPE="foreign" FIELDS="endpoint_id" REFTABLE="ext_api_endpoints" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_endpoint_run"       UNIQUE="false" FIELDS="endpoint_id, run_id"/>
+        <INDEX NAME="idx_endpoint_processed" UNIQUE="false" FIELDS="endpoint_id, processed"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>
