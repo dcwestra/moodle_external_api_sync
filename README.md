@@ -29,15 +29,6 @@ A generic, configurable integration plugin for MapleLMS that synchronises data b
 - PHP 8.0+
 - `openssl` PHP extension (for credential encryption)
 
----
-
-## Installation
-
-1. Download the latest `external_api_sync_vX.X.X.zip`
-2. Provide the zip to your MapleLMS support team for installation
-3. They will place it in `/local/external_api_sync/` and trigger a Moodle upgrade
-
-Or via admin UI: **Site Administration → Plugins → Install plugins** and upload the zip directly.
 
 ---
 
