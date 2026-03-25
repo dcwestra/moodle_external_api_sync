@@ -107,12 +107,32 @@ class user_sync {
             return;
         }
 
-        if ($existing_user) {
-            $this->update_user($existing_user, $user_fields, $profile_fields);
-            $this->stats['updated']++;
-        } else {
-            $this->create_user($user_fields, $profile_fields);
-            $this->stats['created']++;
+        $action = $this->endpoint->sync_action ?? 'create_update';
+
+        switch ($action) {
+            case 'suspend':
+                if ($existing_user) {
+                    if (!$existing_user->suspended) {
+                        $this->suspend_user($existing_user);
+                        $this->stats['updated']++;
+                    } else {
+                        $this->stats['skipped']++;
+                    }
+                } else {
+                    $this->stats['skipped']++;
+                }
+                break;
+
+            case 'create_update':
+            default:
+                if ($existing_user) {
+                    $this->update_user($existing_user, $user_fields, $profile_fields);
+                    $this->stats['updated']++;
+                } else {
+                    $this->create_user($user_fields, $profile_fields);
+                    $this->stats['created']++;
+                }
+                break;
         }
     }
 
@@ -166,6 +186,16 @@ class user_sync {
     /**
      * Create a new Moodle user from mapped data.
      */
+    /**
+     * Suspend a Moodle user — sets suspended = 1, disabling login.
+     * Preserves all data. Fires user_updated event.
+     */
+    private function suspend_user(object $user): void {
+        global $DB;
+        $DB->set_field('user', 'suspended', 1, ['id' => $user->id]);
+        \core\event\user_updated::create_from_userid($user->id)->trigger();
+    }
+
     private function create_user(array $user_fields, array $profile_fields): void {
         global $CFG;
 

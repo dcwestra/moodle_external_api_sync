@@ -301,6 +301,7 @@ local_external_api_sync/
 | 1.2.0 | Added Course Completion and Activity Completion push entity types; fixed auth handler doubled Authorization header bug; switched all HTTP calls to native PHP curl; added array filter syntax to response parser (`Items[Field=Value]`, `Items[0]`, `Items[*]`); added parent-child endpoint enumeration for two-stage APIs; fixed manual run button to route through parent-child logic |
 | 1.2.1 | Fixed `is_due()` cron evaluator — replaced interval estimation with proper cron expression parsing supporting exact values, `*`, step (`*/N`), lists, and ranges; fixes endpoints not firing on correct schedule; added `set_time_limit(0)` for long-running syncs |
 | 1.2.2 | Source of truth enforcement — user sync now correctly overwrites Moodle fields with API values including previously blank fields; skips writes when values are identical for efficiency; Dayforce always wins on field conflicts |
+| 1.2.3 | Implemented Suspend sync action — endpoints with Sync Action = Suspend now correctly set suspended = 1 on matched Moodle users; unrecognised users are skipped silently |
 
 ---
 
