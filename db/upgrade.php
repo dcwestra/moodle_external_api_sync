@@ -57,5 +57,21 @@ function xmldb_local_external_api_sync_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032300, 'local', 'external_api_sync');
     }
 
+    if ($oldversion < 2026042300) {
+
+        // Add transform_arg field to ext_api_field_mappings.
+        // This allows transforms such as date_unix to accept a configuration
+        // argument — e.g. a pad width of "10" to zero-pad Unix timestamps to a
+        // fixed length, ensuring correct string comparison in plugins that
+        // compare profile field VARCHAR values without an explicit numeric cast.
+        $table = new xmldb_table('ext_api_field_mappings');
+        $field = new xmldb_field('transform_arg', XMLDB_TYPE_CHAR, '100', null, null, null, null, 'transform');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026042300, 'local', 'external_api_sync');
+    }
+
     return true;
 }
