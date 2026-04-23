@@ -318,7 +318,7 @@ class push_sync {
                 $value = $mapping->default_value ?? null;
             }
 
-            $value = $this->apply_transform($value, $mapping->transform ?? 'none');
+            $value = $this->apply_transform($value, $mapping->transform ?? 'none', $mapping->transform_arg ?? '');
             $this->set_nested($row, $external, $value);
         }
 
@@ -372,7 +372,7 @@ class push_sync {
                 $value = $mapping->default_value ?? null;
             }
 
-            $value = $this->apply_transform($value, $mapping->transform ?? 'none');
+            $value = $this->apply_transform($value, $mapping->transform ?? 'none', $mapping->transform_arg ?? '');
             $this->set_nested($row, $external, $value);
         }
 
@@ -428,7 +428,7 @@ class push_sync {
                 $value = $mapping->default_value ?? null;
             }
 
-            $value = $this->apply_transform($value, $mapping->transform ?? 'none');
+            $value = $this->apply_transform($value, $mapping->transform ?? 'none', $mapping->transform_arg ?? '');
             $this->set_nested($row, $external, $value);
         }
 
@@ -492,11 +492,11 @@ class push_sync {
         return $data_rec ? $data_rec->data : null;
     }
 
-    private function apply_transform($value, string $transform) {
+    private function apply_transform($value, string $transform, string $transform_arg = '') {
         if (empty($transform) || $transform === 'none') {
             return $value;
         }
-        return response_parser::apply_transform($value, $transform);
+        return response_parser::apply_transform($value, $transform, $transform_arg);
     }
 
     private function set_nested(array &$array, string $key, $value): void {

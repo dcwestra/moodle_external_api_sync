@@ -22,7 +22,6 @@ use local_external_api_sync\api\client;
 use local_external_api_sync\sync\user_sync;
 use local_external_api_sync\sync\enrolment_sync;
 use local_external_api_sync\sync\push_sync;
-use local_external_api_sync\sync\calendar_sync;
 use local_external_api_sync\util\crypto;
 
 /**
@@ -176,14 +175,7 @@ class sync_task extends \core\task\scheduled_task {
                 return $stats;
             }
 
-            // Teams calendar sync is self-contained — it queries Moodle DB
-            // and Graph directly, bypassing the standard pull/push HTTP client.
-            if ($endpoint->entity_type === 'teams_calendar') {
-                $syncer = new calendar_sync($endpoint, $connection);
-                $result = $syncer->process();
-                $stats['errors'] = $syncer->get_errors();
-
-            } elseif ($endpoint->direction === 'push') {
+            if ($endpoint->direction === 'push') {
                 $http_client = new client($connection, $endpoint);
                 // Push: send Moodle data outward.
                 $pusher = new push_sync($endpoint, $mappings, $http_client);

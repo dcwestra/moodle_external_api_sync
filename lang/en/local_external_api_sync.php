@@ -414,3 +414,6 @@ $string['parent_only_badge']           = '[Parent]';
 $string['child_endpoint_badge']        = '[Child]';
 $string['none']                        = '— None —';
 $string['parent_only_no_manual'] = 'This is a parent-only endpoint and cannot be run manually. Run its child endpoint instead.';
+
+// Concat transform.
+$string['transform_concat'] = 'Concatenate (join two fields)';

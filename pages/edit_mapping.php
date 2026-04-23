@@ -132,6 +132,7 @@ class edit_mapping_form extends moodleform {
             'date_iso'  => get_string('transform_date_iso',  'local_external_api_sync'),
             'prefix'    => get_string('transform_prefix',    'local_external_api_sync'),
             'suffix'    => get_string('transform_suffix',    'local_external_api_sync'),
+            'concat'    => get_string('transform_concat',    'local_external_api_sync'),
         ];
         $mform->addElement('select', 'transform',
             get_string('transform', 'local_external_api_sync'), $transform_opts);

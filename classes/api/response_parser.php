@@ -245,7 +245,7 @@ class response_parser {
      * @param string $transform Transform name
      * @return mixed Transformed value
      */
-    public static function apply_transform($value, string $transform) {
+    public static function apply_transform($value, string $transform, string $transform_arg = '') {
         if ($value === null || $value === '') {
             return $value;
         }
@@ -262,12 +262,32 @@ class response_parser {
 
             case 'date_unix':
                 // Convert date string to Unix timestamp.
+                // If transform_arg is a numeric width (e.g. "10"), the resulting
+                // timestamp is zero-padded to that length. This ensures correct
+                // string comparison in plugins (such as tool_dynamic_cohorts) that
+                // compare the stored VARCHAR value without an explicit numeric CAST —
+                // a 9-digit timestamp starting with '9' would otherwise sort after
+                // any 10-digit timestamp starting with '1'. Setting transform_arg
+                // to "10" fixes all pre-2001 hire dates without affecting any
+                // current 10-digit timestamps.
                 $timestamp = strtotime((string) $value);
-                return $timestamp !== false ? $timestamp : $value;
+                if ($timestamp === false) {
+                    return $value;
+                }
+                if (!empty($transform_arg) && is_numeric($transform_arg)) {
+                    return str_pad((string) $timestamp, (int) $transform_arg, '0', STR_PAD_LEFT);
+                }
+                return $timestamp;
 
             case 'unix_date':
                 // Convert Unix timestamp to Y-m-d string.
                 return is_numeric($value) ? date('Y-m-d', (int) $value) : $value;
+
+            case 'prefix':
+                return !empty($transform_arg) ? $transform_arg . (string) $value : (string) $value;
+
+            case 'suffix':
+                return !empty($transform_arg) ? (string) $value . $transform_arg : (string) $value;
 
             case 'none':
             default:
@@ -299,7 +319,27 @@ class response_parser {
 
             // Apply transform.
             if (!empty($mapping->transform) && $mapping->transform !== 'none') {
-                $value = self::apply_transform($value, $mapping->transform);
+                $transform_arg = $mapping->transform_arg ?? '';
+
+                if ($mapping->transform === 'concat') {
+                    // Concatenation — fetch a second field from the same record
+                    // and join with separator. transform_arg format:
+                    // "Other.Field.Path" — joins with space
+                    // "Other.Field.Path| - " — joins with custom separator after pipe
+                    $separator = ' ';
+                    $second_path = $transform_arg;
+                    if (strpos($transform_arg, '|') !== false) {
+                        [$second_path, $separator] = explode('|', $transform_arg, 2);
+                    }
+                    $second_value = self::extract_field($record, trim($second_path));
+                    if ($value !== null && $second_value !== null) {
+                        $value = trim((string) $value) . $separator . trim((string) $second_value);
+                    } elseif ($second_value !== null) {
+                        $value = trim((string) $second_value);
+                    }
+                } else {
+                    $value = self::apply_transform($value, $mapping->transform, $transform_arg);
+                }
             }
 
             $mapped[$mapping->internal_field] = $value;

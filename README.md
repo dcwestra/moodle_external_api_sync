@@ -58,7 +58,6 @@ Or via admin UI: **Site Administration → Plugins → Install plugins** and upl
 | `Users` | Pushes active Moodle user profiles to an external endpoint |
 | `Course Completions` | Pushes one record per user per course: completion status, date, grade, pass/fail |
 | `Activity Completions` | Pushes one record per user per course module: activity-level completion and grade |
-| `Teams Calendar` | Syncs enrolled users as attendees on Microsoft Teams meetings via Graph API |
 
 ---
 
@@ -231,6 +230,7 @@ All course completion fields above, plus:
 | `unix_date` | Unix timestamp → Y-m-d string |
 | `prefix` | Prepend a string (set value in Transform Argument) |
 | `suffix` | Append a string (set value in Transform Argument) |
+| `concat` | Join two fields — Transform Argument = second field path e.g. `EmployeeManagers.Items[0].ManagerLastName`; optionally append `\|separator` for custom separator e.g. `EmployeeManagers.Items[0].ManagerLastName\| - ` |
 
 ---
 
@@ -256,7 +256,6 @@ local_external_api_sync/
 │   │   ├── user_sync.php        # Pull → create/update Moodle users
 │   │   ├── enrolment_sync.php   # Pull → enrol/unenrol in courses
 │   │   ├── push_sync.php        # Push → user profiles, completions, grades
-│   │   ├── calendar_sync.php    # Push → Teams meeting attendees via Graph API
 │   │   └── parent_child_runner.php  # Two-stage enumeration orchestrator
 │   ├── task/
 │   │   └── sync_task.php        # Scheduled task — dispatcher + parent-child routing
@@ -302,6 +301,8 @@ local_external_api_sync/
 | 1.2.1 | Fixed `is_due()` cron evaluator — replaced interval estimation with proper cron expression parsing supporting exact values, `*`, step (`*/N`), lists, and ranges; fixes endpoints not firing on correct schedule; added `set_time_limit(0)` for long-running syncs |
 | 1.2.2 | Source of truth enforcement — user sync now correctly overwrites Moodle fields with API values including previously blank fields; skips writes when values are identical for efficiency; Dayforce always wins on field conflicts |
 | 1.2.3 | Implemented Suspend sync action — endpoints with Sync Action = Suspend now correctly set suspended = 1 on matched Moodle users; unrecognised users are skipped silently |
+| 1.2.4 | Added `concat` transform — joins two API fields into one Moodle field with configurable separator; added `transform_arg` support to `prefix` and `suffix` transforms |
+| 1.2.5 | Fixed `user_create_user()` third parameter from `false` to `true` — user creation now fires `\core\event\user_created` so event-based plugins (e.g. tool_trigger) can react to new users; removed `calendar_sync` (Teams meeting attendee sync moved to `mod_msteamsecp`); fixed `push_sync` `apply_transform()` not passing `transform_arg` to `prefix`/`suffix`/`concat` transforms in push mode; removed orphaned `raw_record_collector` stub class from `parent_child_runner.php` |
 
 ---
 

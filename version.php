@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_external_api_sync';
-$plugin->version   = 2026032300;  // No schema changes since 1.2.0
+$plugin->version   = 2026042200;  // 1.2.6 — date_unix transform supports zero-padding via transform_arg
 $plugin->requires  = 2022041900; // Moodle 4.0+
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.2.3';
+$plugin->release   = '1.2.6';

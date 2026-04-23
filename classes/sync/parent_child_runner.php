@@ -256,12 +256,4 @@ class parent_child_runner {
     }
 }
 
-/**
- * Minimal sync handler for raw entity type in parent-child context.
- * Counts records without processing them — useful for testing.
- */
-class raw_record_collector {
-    public function sync_record(array $record, object $endpoint): string {
-        return 'processed';
-    }
-}
+

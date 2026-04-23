@@ -226,7 +226,7 @@ class user_sync {
             $user->lang = $CFG->lang ?? 'en';
         }
 
-        $user->id = user_create_user($user, false, false);
+        $user->id = user_create_user($user, false, true);
 
         // Save custom profile fields.
         if (!empty($profile_fields)) {
