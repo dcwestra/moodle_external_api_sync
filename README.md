@@ -71,10 +71,10 @@ Or via admin UI: **Site Administration → Plugins → Install plugins** and upl
 |---|---|
 | Name | Display name e.g. "Dayforce HR" or "Microsoft Graph" |
 | Auth Type | OAuth2, API Key, Basic Auth, or Bearer Token |
-| Base URL | Root API URL e.g. `https://us252-services.dayforcehcm.com` |
+| Base URL | Root API URL |
 | Token URL | OAuth2 only — token endpoint |
 | Client ID / Secret | OAuth2 credentials |
-| Scope | OAuth2 scopes e.g. `https://graph.microsoft.com/.default` |
+| Scope | OAuth2 scopes e.g.|
 
 ### 2. Add an Endpoint
 
@@ -82,7 +82,7 @@ From the connection's Endpoints page:
 
 | Field | Description |
 |---|---|
-| Path | API path e.g. `/Api/Eyecare/V1/Employees/{XRefCode}` |
+| Path | API path |
 | HTTP Method | GET, POST, PUT, PATCH |
 | Direction | Pull or Push |
 | Entity Type | See entity types table above |
@@ -99,7 +99,7 @@ Some APIs require two calls: first fetch a list of IDs, then fetch detail for ea
 
 | Field | Value |
 |---|---|
-| Path | `/Api/Eyecare/V1/Employees` |
+| Path | `/Api/OrgName/V1/Employees` |
 | Query Params | `{"employmentStatusXRefCode": "ACTIVE,ON_LEAVE"}` |
 | Response Root Path | `Data` |
 | Entity Type | `Raw` |
@@ -109,7 +109,7 @@ Some APIs require two calls: first fetch a list of IDs, then fetch detail for ea
 
 | Field | Value |
 |---|---|
-| Path | `/Api/Eyecare/V1/Employees/{XRefCode}` |
+| Path | `/Api/OrgName/V1/Employees/{XRefCode}` |
 | Query Params | `{"expand": "Contacts,EmploymentStatuses,WorkAssignments,OrgUnitInfos"}` |
 | Response Root Path | `Data` |
 | Entity Type | `Users` |
@@ -122,7 +122,7 @@ When the child endpoint's cron fires, it automatically triggers the parent first
 The placeholder token `{XRefCode}` is substituted with each ID in both the URL path and query parameter values, so both of these patterns work:
 
 ```
-/Api/Eyecare/V1/Employees/{XRefCode}          ← path substitution
+/Api/OrgNameV1/Employees/{XRefCode}          ← path substitution
 /Api/v1/users?id={XRefCode}                   ← query param substitution
 ```
 
