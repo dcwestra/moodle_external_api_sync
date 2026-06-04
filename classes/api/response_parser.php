@@ -289,6 +289,24 @@ class response_parser {
             case 'suffix':
                 return !empty($transform_arg) ? (string) $value . $transform_arg : (string) $value;
 
+            case 'value_map':
+                // Map specific input values to output values.
+                // transform_arg format: "InputA=output1|InputB=output2"
+                // Case-insensitive match; returns original value if no match found.
+                if (empty($transform_arg)) {
+                    return $value;
+                }
+                foreach (explode('|', $transform_arg) as $pair) {
+                    if (strpos($pair, '=') === false) {
+                        continue;
+                    }
+                    [$from, $to] = explode('=', $pair, 2);
+                    if (strcasecmp(trim($from), (string) $value) === 0) {
+                        return $to;
+                    }
+                }
+                return $value;
+
             case 'none':
             default:
                 return $value;

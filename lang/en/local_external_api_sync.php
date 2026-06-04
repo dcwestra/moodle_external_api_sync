@@ -350,7 +350,7 @@ $string['transform_date_iso']      = 'Date → ISO 8601';
 $string['transform_prefix']        = 'Add Prefix';
 $string['transform_suffix']        = 'Add Suffix';
 $string['transform_arg']           = 'Transform Argument';
-$string['transform_arg_help']      = 'For prefix/suffix: the string to add. For date transforms: the input format.';
+$string['transform_arg_help']      = 'For prefix/suffix: the string to add. For date transforms: the input format. For value_map: pipe-separated pairs, e.g. Active=0|On-Leave=1|Terminated=1.';
 $string['default_value']           = 'Default Value';
 $string['default_value_help']      = 'Value to use when the external field is missing or empty.';
 $string['sortorder']               = 'Sort Order';
@@ -417,3 +417,7 @@ $string['parent_only_no_manual'] = 'This is a parent-only endpoint and cannot be
 
 // Concat transform.
 $string['transform_concat'] = 'Concatenate (join two fields)';
+
+// Value map transform.
+$string['transform_value_map']      = 'Value Map';
+$string['transform_value_map_help'] = 'Map specific input values to output values. Format: InputA=output1|InputB=output2. Case-insensitive match; returns original value if no match found.';
