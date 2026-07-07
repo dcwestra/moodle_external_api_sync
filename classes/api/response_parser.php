@@ -292,20 +292,34 @@ class response_parser {
             case 'value_map':
                 // Map specific input values to output values.
                 // transform_arg format: "InputA=output1|InputB=output2"
-                // Case-insensitive match; returns original value if no match found.
+                // Optional wildcard fallback for unlisted inputs: "*=output3"
+                // Case-insensitive, whitespace-tolerant match on both the
+                // incoming value and the configured pairs, so "Active=0 | ..."
+                // and API values with stray spaces behave as expected.
+                // Returns original value if no match found and no fallback set.
                 if (empty($transform_arg)) {
                     return $value;
                 }
+                $needle       = trim((string) $value);
+                $fallback     = null;
+                $has_fallback = false;
                 foreach (explode('|', $transform_arg) as $pair) {
                     if (strpos($pair, '=') === false) {
                         continue;
                     }
                     [$from, $to] = explode('=', $pair, 2);
-                    if (strcasecmp(trim($from), (string) $value) === 0) {
+                    $from = trim($from);
+                    $to   = trim($to);
+                    if ($from === '*') {
+                        $fallback     = $to;
+                        $has_fallback = true;
+                        continue;
+                    }
+                    if (strcasecmp($from, $needle) === 0) {
                         return $to;
                     }
                 }
-                return $value;
+                return $has_fallback ? $fallback : $value;
 
             case 'none':
             default:
@@ -330,9 +344,12 @@ class response_parser {
 
             $value = self::extract_field($record, $mapping->external_field);
 
-            // Apply default if value is empty.
-            if (($value === null || $value === '') && !empty($mapping->default_value)) {
-                $value = $mapping->default_value;
+            // Apply default if value is empty. Deliberately not using empty()
+            // here: a default of "0" is a legitimate value (e.g. suspended=0)
+            // and empty('0') is true in PHP.
+            $default = $mapping->default_value ?? null;
+            if (($value === null || $value === '') && $default !== null && $default !== '') {
+                $value = $default;
             }
 
             // Apply transform.

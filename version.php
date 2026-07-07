@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_external_api_sync';
-$plugin->version   = 2026060400;  // 1.3.0 — adds value_map transform for string-to-integer field mapping
+$plugin->version   = 2026070700;  // 1.3.1 — fix default_value "0" ignored; value_map whitespace tolerance + *= fallback; test mode shows mapped values
 $plugin->requires  = 2022041900; // Moodle 4.0+
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.3.0';
+$plugin->release   = '1.3.1';

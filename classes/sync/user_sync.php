@@ -102,7 +102,13 @@ class user_sync {
 
         if ($this->test_mode) {
             // Test mode: log what would happen but don't write.
-            mtrace('  [TEST MODE] Would ' . ($existing_user ? 'update' : 'create') . ' user: ' . ($key_field['value'] ?? ''));
+            // Include the mapped values so transforms/defaults can be verified.
+            $values = [];
+            foreach ($mapped as $field => $value) {
+                $values[] = $field . '=' . ($value === null ? 'NULL' : '"' . $value . '"');
+            }
+            mtrace('  [TEST MODE] Would ' . ($existing_user ? 'update' : 'create') . ' user: ' . ($key_field['value'] ?? '')
+                . ' [' . implode(', ', $values) . ']');
             $existing_user ? $this->stats['updated']++ : $this->stats['created']++;
             return;
         }
